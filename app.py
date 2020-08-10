@@ -2,21 +2,33 @@ from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 import time, datetime
 
-# Bot was created for purely testing purpose.
-# It aims to increase the lvl by automatic betting
-# Using the script at your own risk.
+# python app.py pipenv shell
 
 
 class RustBot:
     def __init__(self, username, password):
+        # for auto_bet and roulette_counter
+        self.value_bet = "0.01"
+        self.color = "blue"  # red / blue / gold
+        # only for roulette_counter
+        self.account = 50  # 10 == 0.10
+        self.amount_bet = 1  # only int values
+        self.counter_circle = 5
+        # don't change !
         self.username = username
         self.password = password
         self.bot = webdriver.Firefox()
-        self.value_bet = "0.01"
-        self.color = "red"  # red / blue / gold
-        self.title_number = 984050  # change numer current color
-        self.account = 50  # 10 == 0.10
-        self.counter_circle = 200  # maximum number of bets
+        self.xp = 0
+        self.counter = 0
+        self.red_counter = 0
+        self.blue_counter = 0
+        self.gold_counter = 0
+
+    def mute_sound(self):
+        bot = self.bot
+        bot.find_element_by_xpath(
+            '//*[@id="app"]/div/div[5]/div/div/div[1]/div/div/div'
+        ).click()
 
     def login(self):
         bot = self.bot
@@ -24,11 +36,8 @@ class RustBot:
         time.sleep(2)
         bot.find_element_by_xpath('//*[@id="app"]/div/div[2]/div[2]/a').click()
         button_login = bot.find_element_by_id("imageLogin")
-        if not bot.find_element_by_id("steamAccountName"):
-            button_login.click()
-            time.sleep(1)
-            bot.get("https://rustchance.com/roulette")
-        else:
+
+        if bot.find_element_by_id("steamAccountName"):
             username = bot.find_element_by_id("steamAccountName")
             password = bot.find_element_by_id("steamPassword")
             username.clear()
@@ -40,7 +49,7 @@ class RustBot:
 
             if bot.find_element_by_id("twofactorcode_entry"):
                 twofactor = bot.find_element_by_id("twofactorcode_entry")
-                code = input("Enter the steam verification code: ").upper()
+                code = input("Podaj kod weryfikacyjny: ").upper()
                 twofactor.send_keys(code)
                 twofactor.send_keys(Keys.RETURN)
                 time.sleep(10)
@@ -48,20 +57,47 @@ class RustBot:
                     '//*[@id="app"]/div/div[4]/div/div[4]/a'
                 ).click()
                 time.sleep(3)
+        else:
+            button_login.click()
+            time.sleep(1)
+            bot.get("https://rustchance.com/roulette")
+            time.sleep(5)
+
+        data.mute_sound()
+
+    def supply_event(self):
+        bot = self.bot
+        while True:
+            try:
+                if bot.find_element_by_class_name("supplydrops"):
+                    join_btn = bot.find_element_by_xpath(
+                        '//*[@id="app"]/div/div[2]/div[5]/div[1]/button/span'
+                    ).text
+                    if join_btn == "JOIN":
+                        bot.find_element_by_xpath(
+                            '//*[@id="app"]/div/div[2]/div[5]/div[1]/button'
+                        ).click()
+                    elif join_btn == "Joined":
+                        time.sleep(60 * 2)
+                    print(error_msg)
+
+                    error_msg = bot.find_element_by_class_name("pt-toast-message").text
+            except:
+                pass
+            time.sleep(4)
 
     def auto_bet(self):
         bot = self.bot
-        account_value = bot.find_element_by_xpath(
-            '//*[@id="app"]/div/div[2]/div[3]/div/div'
-        ).text
-        title_number = self.title_number
-        if account_value != "0.00":
-            bet = True
-        else:
-            bet = False
-
-        title_number = self.title_number
+        bet = True
+        title_number = int(
+            bot.find_element_by_xpath(
+                '//*[@id="app"]/div/div[5]/div/div/div[2]/div[2]/div[2]/div[2]/img[1]'
+            ).get_attribute("title")
+        )
         while bet == True:
+            account_value = bot.find_element_by_xpath(
+                '//*[@id="app"]/div/div[2]/div[3]/div/div'
+            ).text
             timer_bet = bot.find_element_by_xpath(
                 '//*[@id="app"]/div/div[5]/div/div/div[2]/div[1]/div[1]/div/div[2]'
             ).text
@@ -73,6 +109,15 @@ class RustBot:
                         )
                         input_bet.clear()
                         input_bet.send_keys(self.value_bet)
+
+                        if bot.find_element_by_class_name("supplydrops"):
+                            join_btn = bot.find_element_by_xpath(
+                                '//*[@id="app"]/div/div[2]/div[5]/div[1]/button/span'
+                            ).text
+                            if join_btn == "JOIN":
+                                ot.find_element_by_xpath(
+                                    '//*[@id="app"]/div/div[2]/div[5]/div[1]/button'
+                                ).click()
 
                         if self.color == "red":
                             bot.find_element_by_xpath(
@@ -86,32 +131,36 @@ class RustBot:
                             bot.find_element_by_xpath(
                                 '//*[@id="app"]/div/div[5]/div/div/div[2]/div[3]/div[2]/div[2]/button'
                             ).click()
-                        else:
-                            print("Error: Wrong color!")
-                            bet == False
                         title_number += 1
+                        self.xp += 1
                 except:
                     pass
-            else:
-                pass
             time.sleep(4)
+            if account_value == "0.00":
+                print("Gained Xp: ", self.xp)
 
     def roulette_counter(self):
         bot = self.bot
         bot.get("https://rustchance.com/roulette")
         time.sleep(1)
-        title_number = self.title_number
         account = self.account
         color = self.color
-        amount_bet = 1
-        counter = 0
-        red_counter = 0
-        blue_counter = 0
-        gold_counter = 0
+        amount_bet = self.amount_bet
+        counter = self.counter
+        red_counter = self.red_counter
+        blue_counter = self.blue_counter
+        gold_counter = self.gold_counter
         start_bot = datetime.datetime.now()
+
+        data.mute_sound()
 
         while (counter < self.counter_circle) and (account >= 0):
             try:
+                title_number = int(
+                    bot.find_element_by_xpath(
+                        '//*[@id="app"]/div/div[5]/div/div/div[2]/div[2]/div[2]/div[2]/img[1]'
+                    ).get_attribute("title")
+                )
                 if bot.find_element_by_xpath(
                     "//*[@title='%s'][@src='/static/media/roulette_red.f539c611.png']"
                     % title_number
@@ -146,31 +195,35 @@ class RustBot:
             counter += 1
             print("counter", counter)
             print("title_number", title_number)
-            print("red_counter", red_counter)
-            print("blue_counter", blue_counter)
-            print("gold_counter", gold_counter)
-            print("account", account)
             print("-------------------")
-            title_number += 1
             time.sleep(25)
 
         stop_bot = datetime.datetime.now()
-        print("start", start_bot)
-        print("stop", stop_bot)
+        print("Start", start_bot)
+        print("Stop", stop_bot)
+        print("red_counter", red_counter)
+        print("blue_counter", blue_counter)
+        print("gold_counter", gold_counter)
+        print("account", account)
+        print("-------------------")
 
     def exit(self):
         bot = self.bot
         bot.close()
 
 
-option = input("1) Bet  2) Counter:  ")
-if option == "1" or "":
-    ed = RustBot("Your Steam Username", "Your Steam Password")
-    ed.login()
-    ed.auto_bet()
-    ed.exit()
+steam_name = input("Enter steam username: ")
+steam_password = input("Enter steam password: ")
+option = input("1) bet & supply  2) counter  3) supply event:  ")
+data = RustBot(steam_name, steam_password)
+if option == "1":
+    data.login()
+    data.auto_bet()
+    data.exit()
 elif option == "2":
-    ed = RustBot("Your Steam Username", "Your Steam Password")
-    ed.roulette_counter()
-    ed.exit()
-
+    data.roulette_counter()
+    data.exit()
+elif option == "3":
+    data.login()
+    data.supply_event()
+    data.exit()
