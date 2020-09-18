@@ -115,7 +115,7 @@ class RustBot:
                                 '//*[@id="app"]/div/div[2]/div[5]/div[1]/button/span'
                             ).text
                             if join_btn == "JOIN":
-                                ot.find_element_by_xpath(
+                                bot.find_element_by_xpath(
                                     '//*[@id="app"]/div/div[2]/div[5]/div[1]/button'
                                 ).click()
 
